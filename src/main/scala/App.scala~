@@ -1,0 +1,9 @@
+package net.godcode.hazelbox
+
+import com.hazelcast.core._
+
+object App {
+  def main(args: Array[String]) {
+    val hazel = Hazelcast.getDefaultInstance
+  }
+}
