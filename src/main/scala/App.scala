@@ -21,10 +21,11 @@ object App {
         interfaces = "127.0.0.1" :: Nil
       )
     ),
-    map = MapConfig(
+    maps = MapConfig(
       store = Some(MapStore(
-        implementation = Some(new MongoLoader())))
-    )
+        implementation = Some(new MongoLoader()))),
+      nearCache = Some(NearCache())
+    ) :: Nil
   )
   
   def main(args: Array[String]) {

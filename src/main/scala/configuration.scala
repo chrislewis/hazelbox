@@ -15,6 +15,14 @@ case object ADD_NEW_ENTRY extends MergePolicy("ADD_NEW_ENTRY")
 case object HIGHER_HITS extends MergePolicy("HIGHER_HITS")
 case object LATEST_UPDATE extends MergePolicy("LATEST_UPDATE")
 
+//http://www.hazelcast.com/docs/1.9.4/manual/multi_html/ch02s03.html#MapNearCache
+case class NearCache(
+  maxSize: Int = 0,
+  ttl: Int = 0,
+  maxIdle: Int = 60,
+  evictionPolicy: Option[EvictionPolicy] = None,
+  invalidateOnChange: Boolean = true)
+
 case class MapConfig[A](
   store: Option[MapStore[A]] = None,
   name: String = "default",
@@ -24,7 +32,8 @@ case class MapConfig[A](
   evictionPolicy: Option[EvictionPolicy] = None,
   maxSize: Int = 0,
   evictionPercentage: Int = 25,
-  mergePolicy: Option[MergePolicy] = None)
+  mergePolicy: Option[MergePolicy] = None,
+  nearCache: Option[NearCache] = None)
 
 sealed trait Network
 case class TcpIp(hosts: List[String], interfaces: List[String]) extends Network
@@ -33,12 +42,12 @@ case class NetworkConfig(port: Int, auto: Boolean = true, network: Network)
 
 /* Simple builder object. Not quite a DSL, but close enough. */
 object Hazel {
-  import com.hazelcast.config.{Config, MapConfig => HMapConfig, MapStoreConfig}
+  import com.hazelcast.config.{Config, MapConfig => HMapConfig, MapStoreConfig, NearCacheConfig}
   
   def apply[A](
     group: (String, String),
     network: NetworkConfig,
-    map: MapConfig[A]
+    maps: Seq[MapConfig[A]]
   ) = {
     val cfg = new Config
     cfg.setPort(network.port)
@@ -55,6 +64,12 @@ object Hazel {
         interfaces.foreach(ifaces.addInterface)
     }
     
+    maps.map(mm).foreach(cfg.addMapConfig)
+    
+    cfg
+  }
+  
+  def mm[A](map: MapConfig[A]) = {
     val mapCfg = new HMapConfig()
     mapCfg.setName(map.name)
       .setBackupCount(map.backups)
@@ -71,8 +86,23 @@ object Hazel {
       mapCfg.setMapStoreConfig(storeCfg)
     }
     
-    cfg.addMapConfig(mapCfg)
+    map.store.map {
+      new MapStoreConfig().setEnabled(true) -> _.implementation
+    } map {
+      case (cfg, impl) =>
+        impl.foreach(cfg.setImplementation)
+        cfg
+    } foreach(mapCfg.setMapStoreConfig)
     
-    cfg
+    map.nearCache.map { nc =>
+      new NearCacheConfig()
+        .setEvictionPolicy(nc.evictionPolicy.map(_.name).getOrElse("NONE"))
+        .setInvalidateOnChange(nc.invalidateOnChange)
+        .setMaxIdleSeconds(nc.maxIdle)
+        .setMaxSize(nc.maxSize)
+        .setTimeToLiveSeconds(nc.ttl)
+    } foreach(mapCfg.setNearCacheConfig)
+    
+    mapCfg
   }
 }
