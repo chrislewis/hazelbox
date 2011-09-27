@@ -1,7 +1,7 @@
 package net.godcode.hazelbox
 
-import com.hazelcast.core._
-import com.hazelcast.client.HazelcastClient
+import net.godcode.hazelbox.config._
+import com.hazelcast.core.Hazelcast
 import com.mongodb.casbah.Imports.ObjectId
 
 object App {
@@ -11,8 +11,24 @@ object App {
     Person(firstName = "Chris")
   )
   
+  val config = Hazel(
+    group = "dev" -> "dev-pass",
+    network = NetworkConfig(
+      port = 5000,
+      auto = true,
+      network = TcpIp(
+        hosts = "localhost" :: Nil,
+        interfaces = "127.0.0.1" :: Nil
+      )
+    ),
+    map = MapConfig(
+      store = Some(MapStore(
+        implementation = Some(new MongoLoader())))
+    )
+  )
+  
   def main(args: Array[String]) {
-    val config = Hazelcast.getConfig()
+    //Hazelcast.init(config)
     val (c1, c2) = (
       Hazelcast.newHazelcastInstance(config),
       Hazelcast.newHazelcastInstance(config)
