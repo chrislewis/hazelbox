@@ -4,6 +4,8 @@ import net.godcode.hazelbox.config._
 import com.hazelcast.core.Hazelcast
 import com.mongodb.casbah.Imports.ObjectId
 
+import com.hazelcast.query.{Predicate, PredicateBuilder, EntryObject}
+
 object App {
   
   val (erin, chris) = (
@@ -55,6 +57,11 @@ object App {
     
     assert(map1.get(chris._id) == chris)
     assert(map2.get(chris._id) == chris)
+    
+    // raw criteria query example
+    val e = new PredicateBuilder().getEntryObject
+    val predicate = e.get("firstName").equal("Chris")
+    assert(map1.values(predicate).isEmpty == false)
     
     println("Goodbye.")
     Hazelcast.shutdownAll()
