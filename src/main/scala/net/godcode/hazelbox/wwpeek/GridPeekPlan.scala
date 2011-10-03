@@ -13,20 +13,24 @@ class GridPeekPlan(hazel: HazelcastInstance) extends Plan {
   def scalaMap[A, B](jm: java.util.Map[A, B]) =
     scala.collection.JavaConversions.asScalaMap(jm)
   
-  val people = scalaMap(hazel.getMap[ObjectId, Person]("default"))
+  val people = scalaMap(hazel.getMap[String, Person]("default"))
   
   val me = Person(firstName = "Chris")
-  people += (me._id -> me)
+  people += (me._id.toString -> me)
   
   def intent = {
     case GET(Path("/person")) => Html(
-      <ul id="people">{ (List.empty[xml.NodeSeq] /: people) { case (ns, (k, v)) => <li>{v}</li> :: ns } }</ul>
+      <ul>{ (List.empty[xml.NodeSeq] /: people) {
+        case (ns, (k, v)) => <li>{v} - <a href={"/person/" + v._id.toString}>delete</a></li> :: ns } }</ul>
     )
     case POST(Path("/person") & Params(p)) =>
       p("firstName").headOption.map { n =>
         val person = Person(firstName = n)
-        people += person._id -> person
-        Ok
+        people += person._id.toString -> person
+        NoContent
       }.getOrElse(BadRequest)
+    case DELETE(Path(Seg("person" :: id :: Nil))) =>
+      people.remove(id)
+      NoContent
   }
 }

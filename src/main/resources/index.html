@@ -2,11 +2,11 @@
 <html>
 <head>
 <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
-<title>Insert title here</title>
+<title>Unfiltered + Hazelcast</title>
 </head>
 <body>
   <form id="person" action="/person" method="post">
-    <input type="text" name="firstName"/>
+    <input type="text" id="firstName" name="firstName"/>
     <input type="submit"/>
   </form>
   <div id="people"></div>
@@ -18,9 +18,20 @@
     };
     loadPeople();
     
+    $("#people li a").live("click", function(e) {
+      e.preventDefault();
+      $.ajax(this.href, {
+        type: "DELETE",
+        success: loadPeople
+      });
+    });
+    
     $("#person").submit(function(e) {
       e.preventDefault();
-      $.post("/person", $("#person").serialize(), loadPeople);
+      $.post("/person", $("#person").serialize(), function() {
+        loadPeople();
+        $("#firstName").val("");
+      });
     });
   })(jQuery);
   </script>
