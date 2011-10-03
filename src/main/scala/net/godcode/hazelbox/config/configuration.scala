@@ -1,9 +1,5 @@
 package net.godcode.hazelbox.config
 
-case class MapStore[A](
-  implementation: Option[A] = None
-)
-
 /* Eviction policies. */
 sealed abstract class EvictionPolicy(val name: String)
 case object LRU extends EvictionPolicy("LRU")
@@ -14,6 +10,10 @@ sealed abstract class MergePolicy(val name: String)
 case object ADD_NEW_ENTRY extends MergePolicy("ADD_NEW_ENTRY")
 case object HIGHER_HITS extends MergePolicy("HIGHER_HITS")
 case object LATEST_UPDATE extends MergePolicy("LATEST_UPDATE")
+
+case class MapStore[A](
+  implementation: Option[A] = None
+)
 
 //http://www.hazelcast.com/docs/1.9.4/manual/multi_html/ch02s03.html#MapNearCache
 case class NearCache(
